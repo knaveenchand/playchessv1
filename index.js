@@ -1,12 +1,20 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const socket = require('socket.io');
 
-const port = process.env.PORT || 3000
+var options = {
+    ca: fs.readFileSync('/etc/letsencrypt/live/play.chessatc.com/chain.pem'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/play.chessatc.com/fullchain.pem'),
+    key: fs.readFileSync('/etc/letsencrypt/live/play.chessatc.com/privkey.pem')
+};
+
+const port = 443;
 
 var app = express();
-const server = http.createServer(app)
-const io = socket(server)
+const server = https.createServer(options, app);
+const io = socket(server);
 var players;
 var joined = true;
 
@@ -23,6 +31,7 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', function (socket) {
+      console.log("New client connected");
     // console.log(players);
     var color;
     var playerId =  Math.floor((Math.random() * 100) + 1)
@@ -76,5 +85,4 @@ io.on('connection', function (socket) {
     
 });
 
-server.listen(port);
-console.log('Connected');
+server.listen(port, () => console.log(`Listening on port ${port}`));
