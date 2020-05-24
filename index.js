@@ -10,7 +10,7 @@ var options = {
     key: fs.readFileSync('/etc/letsencrypt/live/play.chessatc.com/privkey.pem')
 };
 
-const port = 443;
+const port = 80;
 
 var app = express();
 const server = https.createServer(options, app);
@@ -18,7 +18,11 @@ const io = socket(server);
 var players;
 var joined = true;
 
-app.use(express.static(__dirname + "/"));
+app.use(express.static(__dirname + "/", { maxAge: 604800 })); // Client-side file caching
+
+//"Cache-Control" : "max-age=604800"
+
+//app.use(express.static(__dirname + "/"));
 
 var games = Array(100);
 for (let i = 0; i < 100; i++) {
@@ -36,7 +40,12 @@ io.on('connection', function (socket) {
     var color;
     var playerId =  Math.floor((Math.random() * 100) + 1)
     
+    
+setInterval(function(){
+    socket.emit('timelapse', '1'); 
+}, 1000);
 
+    
     console.log(playerId + ' connected');
 
     socket.on('joined', function (roomId) {
@@ -66,6 +75,15 @@ io.on('connection', function (socket) {
     socket.on('move', function (msg) {
         socket.broadcast.emit('move', msg);
         // console.log(msg);
+    });
+    
+    socket.on('clientsenttime', function(msg){
+        socket.broadcast.emit('clientviaservertimer', msg);
+        if (msg.gamestatus === 'timeup') {
+        socket.emit('clientviaservertimer', msg);            
+        }
+//        socket.emit('clientviaservertimer', msg);
+//        console.log(msg);
     });
 
     socket.on('play', function (msg) {
